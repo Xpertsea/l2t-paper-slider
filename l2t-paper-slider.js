@@ -312,6 +312,18 @@ Polymer$0({
       reflectToAttribute: true,
       observer: '_reInit'
     },
+    /**
+   * String for storing html direction
+   *
+   * @attribute direction
+   * @type String
+   * @default document.dir
+   */
+    direction: {
+      type: String,
+      notify: true,
+      value: document.dir
+    }
   },
 
   // Key Bindings //
@@ -331,12 +343,21 @@ Polymer$0({
   */
   _animateCSS: function () {
     var deep = this.$.container,
-      indSel = deep.querySelector(".slider__indicator");
+      indSel = deep.querySelector(".slider__indicator"),
+      sign = "-";
+    if (this.direction === "rtl") {
+      sign = "+";
+    }
     if (this._dotStyles) {
-      deep.querySelector(".slider__slides").style.transform = "translateX(-" + 100 * this.position + "%)",
+      deep.querySelector(".slider__slides").style.transform = "translateX(" + sign + 100 * this.position + "%)",
         indSel.style.opacity = "1";
-      indSel.style.left = "calc((((" + this._dotStyles.marginRight + " + " + this._dotStyles.marginLeft + ") + (" + this._dotStyles.paddingRight + " + " + this._dotStyles.paddingLeft + ") + " + this._dotStyles.width + ") * " + this.position + ") + " + this.position + " * (" + this._dotStyles.borderLeftWidth + " + " + this._dotStyles.borderRightWidth + "))";
-      indSel.style.right = "calc(" + ((this.totalSlides - (this.position + 1))) + "*((" + this._dotStyles.marginRight + " + " + this._dotStyles.marginLeft + ") + (" + this._dotStyles.borderLeftWidth + " + " + this._dotStyles.borderRightWidth + ") + (" + this._dotStyles.paddingLeft + " + " + this._dotStyles.paddingRight + ") + " + this._dotStyles.width + "))";
+      if (this.direction === "rtl") {
+        indSel.style.right = "calc((((" + this._dotStyles.marginRight + " + " + this._dotStyles.marginLeft + ") + (" + this._dotStyles.paddingRight + " + " + this._dotStyles.paddingLeft + ") + " + this._dotStyles.width + ") * " + this.position + ") + " + this.position + " * (" + this._dotStyles.borderLeftWidth + " + " + this._dotStyles.borderRightWidth + "))";
+        indSel.style.left = "calc(" + ((this.totalSlides - (this.position + 1))) + "*((" + this._dotStyles.marginRight + " + " + this._dotStyles.marginLeft + ") + (" + this._dotStyles.borderLeftWidth + " + " + this._dotStyles.borderRightWidth + ") + (" + this._dotStyles.paddingLeft + " + " + this._dotStyles.paddingRight + ") + " + this._dotStyles.width + "))";
+      } else {
+        indSel.style.left = "calc((((" + this._dotStyles.marginRight + " + " + this._dotStyles.marginLeft + ") + (" + this._dotStyles.paddingRight + " + " + this._dotStyles.paddingLeft + ") + " + this._dotStyles.width + ") * " + this.position + ") + " + this.position + " * (" + this._dotStyles.borderLeftWidth + " + " + this._dotStyles.borderRightWidth + "))";
+        indSel.style.right = "calc(" + ((this.totalSlides - (this.position + 1))) + "*((" + this._dotStyles.marginRight + " + " + this._dotStyles.marginLeft + ") + (" + this._dotStyles.borderLeftWidth + " + " + this._dotStyles.borderRightWidth + ") + (" + this._dotStyles.paddingLeft + " + " + this._dotStyles.paddingRight + ") + " + this._dotStyles.width + "))";
+      }
     }
   },
 
@@ -435,12 +456,18 @@ Polymer$0({
   _moveInd: function (dotElem) {
     if (dotElem != undefined) {
       //#TODO:   clearInterval(this.moveNext()); ?
+      var dirRight = "right",
+        dirLeft = "left";
+      if (this.direction === "rtl") {
+        dirRight = "left";
+        dirLeft = "right";
+      }
       var sliderElem = this.$.container,
         indicatorElem = sliderElem.querySelector('.slider__indicator'),
         currentPos = parseInt(sliderElem.getAttribute('data-pos')),
         newPos = parseInt(dotElem.getAttribute('aria-posinset')),
-        newDirection = newPos > currentPos ? 'right' : 'left',
-        currentDirection = newPos < currentPos ? 'right' : 'left';
+        newDirection = newPos > currentPos ? dirRight : dirLeft,
+        currentDirection = newPos < currentPos ? dirRight : dirLeft;
       indicatorElem.classList.remove('slider__indicator--' + currentDirection);
       indicatorElem.classList.add('slider__indicator--' + newDirection);
       this.position = newPos;
@@ -533,7 +560,11 @@ Polymer$0({
   */
   _swipeHandler: function (e) {
     if (!(this.disableSwipe)) {
-      var deep = this.$.container;
+      var deep = this.$.container,
+        sign = "-";
+      if (this.direction === "rtl") {
+        sign = "+";
+      }
       switch (e.detail.state) {
         case 'start':
           this.startPosX = e.detail.x;
@@ -545,14 +576,14 @@ Polymer$0({
           var perActual = this.position == 0 && swipeTravel < 0 ? 0 : this.position == (this.totalSlides - 1) && swipeTravel > 0 ? 0 : (swipeTravel / actualWidth) * 100;
           var percentMove = perActual > 100 ? (this.position * 100) + 100 : perActual < -100 ? (this.position * 100) - 100 : perActual + (this.position * 100);
           this.perMov = percentMove <= 100 * (this.totalSlides - 1) ? percentMove >= 0 && percentMove : this.totalSlides;
-          deep.querySelector(".slider__slides").style.transform = "translateX(-" + this.perMov + "%)";
+          deep.querySelector(".slider__slides").style.transform = "translateX(" + sign + this.perMov + "%)";
           break;
         case 'end':
           var senNumber = this.sensitivity == "high" ? 0.25 : this.sensitivity == "low" ? -0.25 : 0;
           var senDirection = this.perMov > (this.position * 100) ? 1 : -1;
           var newPos = Math.round((this.perMov / 100) + (senNumber * senDirection));
           deep.querySelector(".slider__slides").classList.add('mouseup');
-          this.position == newPos ? deep.querySelector(".slider__slides").style.transform = "translateX(-" + this.position * 100 + "%)" : false;
+          this.position == newPos ? deep.querySelector(".slider__slides").style.transform = "translateX(" + sign + this.position * 100 + "%)" : false;
           this.movePos(newPos);
           break;
       }
